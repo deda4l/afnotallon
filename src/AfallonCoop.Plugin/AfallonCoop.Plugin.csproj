@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Battlegrounds: off until the game ships one (dotnet build -p:Battlegrounds=true to include them) -->
+    <DefineConstants Condition="'$(Battlegrounds)' == 'true'">$(DefineConstants);BATTLEGROUNDS</DefineConstants>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>AfallonCoop.Plugin</RootNamespace>
+    <AssemblyName>AfallonCoop</AssemblyName>
+    <Version>0.6.0</Version>
+    <!-- Path to the game; override with -p:GameDir=... -->
+    <GameDir Condition="'$(GameDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Afallon</GameDir>
+    <BepInExDir>$(GameDir)\BepInEx</BepInExDir>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <!-- the dev bridge's own source: `help` lists its commands from it -->
+    <EmbeddedResource Include="DevBridge.cs" LogicalName="AfallonCoop.DevCommands" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AfallonCoop.Core\AfallonCoop.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="..\..\lib\steamworks\Windows-x64\Steamworks.NET.dll" />
+    <Reference Include="$(BepInExDir)\core\BepInEx.Core.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\BepInEx.Unity.IL2CPP.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\Il2CppInterop.Runtime.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\core\0Harmony.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Il2Cppmscorlib.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Il2CppSystem.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Il2CppSystem.Core.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.AnimationModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.AudioModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.ParticleSystemModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.UIModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.TextRenderingModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.PhysicsModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\UnityEngine.AIModule.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(BepInExDir)\interop\Assembly-CSharp.dll" Private="false" />
+  </ItemGroup>
+
+  <!-- What goes into BepInEx/plugins/AfallonCoop: the plugin, its managed deps and the Steam native lib -->
+  <ItemGroup>
+    <ModFiles Include="$(OutDir)AfallonCoop.dll;$(OutDir)AfallonCoop.Core.dll;$(OutDir)LiteNetLib.dll;$(OutDir)Steamworks.NET.dll" />
+    <ModFiles Include="..\..\lib\steamworks\Windows-x64\steam_api64.dll" />
+  </ItemGroup>
+
+  <!-- Deploy: the mod's files into the game's BepInEx/plugins/AfallonCoop (-p:Deploy=false to skip) -->
+  <Target Name="Deploy" AfterTargets="Build" Condition="'$(Deploy)' != 'false'">
+    <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(BepInExDir)\plugins\AfallonCoop" SkipUnchangedFiles="false" ContinueOnError="true" />
+  </Target>
+
+  <!-- Release archive, the mod only (players install BepInEx themselves): dotnet build -c Release -p:Package=true
+       -> dist/AfNotAllon-<Version>.zip with BepInEx/plugins/AfallonCoop/... and the README, unzipped into the game folder -->
+  <Target Name="Package" AfterTargets="Build" Condition="'$(Package)' == 'true'">
+    <PropertyGroup>
+      <PackageDir>$(BaseIntermediateOutputPath)package\</PackageDir>
+      <PackageZip>$(MSBuildProjectDirectory)\..\..\dist\AfNotAllon-$(Version).zip</PackageZip>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PackageDir)" />
+    <Copy SourceFiles="@(ModFiles)" DestinationFolder="$(PackageDir)BepInEx\plugins\AfallonCoop" />
+    <Copy SourceFiles="..\..\README.md" DestinationFolder="$(PackageDir)" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\..\dist" />
+    <ZipDirectory SourceDirectory="$(PackageDir)" DestinationFile="$(PackageZip)" Overwrite="true" />
+    <Message Importance="high" Text="Mod archive: $(PackageZip)" />
+  </Target>
+
+</Project>

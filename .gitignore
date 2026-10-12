@@ -1,0 +1,13 @@
+# Only the mod's source and its docs go to the repository. Everything else here is local tooling or game-derived
+# material (decompiled dumps, Ghidra project, the game's libraries, build archives, test scripts) that must stay out.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/src/
+
+# build output
+bin/
+obj/
+*.user
+.vs/
